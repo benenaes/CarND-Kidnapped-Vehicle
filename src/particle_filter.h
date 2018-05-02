@@ -23,7 +23,53 @@ struct Particle {
 	std::vector<double> sense_y;
 };
 
+/**
+ * Associate landmark observations (in map coordinates) with landmarks defined in a map
+ * @param map_landmarks Map containing all landmark data
+ * @param transformed_observations landmark observations (in map coordinates)
+ * @return Associations made in between landmark observations and landmark data on the map.
+ *  For example: the first element is the index of the landmark in "map" that is associated with the first observed landmark, etc.
+*/
+std::vector<unsigned int> associate_landmarks(
+	const Map & map_landmarks,
+	const std::vector<LandmarkObs>& transformed_observations);
 
+/**
+ * Transform observations from a particle perspective to map coordinates
+ * @param vehicle_observations Observations from a vehicle's (particle's) perspective
+ * @param particle A particle
+ * @return Observations transformed to map coordinates
+*/
+std::vector<LandmarkObs> transform_to_map_coordinates(
+	const std::vector<LandmarkObs> & vehicle_observations,
+	const Particle & particle);
+
+/**
+ * Calculate the Gaussian probability (partial weight) of a particle's state given a landmark observation of an existing (known) landmark
+ * @param transformed_landmark_observation The observed position of a landmark calculated from a particle's state and a given distance
+ * @param associated_landmark Data of the associated map landmark
+ * @param std_landmark Standard deviations of landmark observations (dependent on the sensor's technology)
+ * @return The partial particle's weight (unimodal Gaussian probability)
+*/
+double calculate_single_probability(
+	const LandmarkObs & transformed_landmark_observation,
+	const Map::single_landmark_s & associated_landmark,
+	const double std_landmark[]);
+
+/**
+ * Calculate the Gaussian probability (weight) of a particle's state given a set of landmark observations of known associated landmarks
+ * @param transformed_landmark_observations The observed positions of landmarks calculated from a particle's state and given distances
+ * @param map Map containing all landmark data
+ * @param associations Associations made in between landmark observations and landmark data on the map. 
+ *  For example: the first element is the index of the landmark in "map" that is associated with the first observed landmark, etc.
+ * @param std_landmark Standard deviations of landmark observations (dependent on the sensor's technology)
+ * @return The multivariate Gaussian probability (weight) of a particle's state
+*/
+double calculate_multivariate_gaussian_prob(
+	const std::vector<LandmarkObs> & transformed_landmark_observations,
+	const Map& map,
+	const std::vector<unsigned int> & associations,
+	const double std_landmark[]);
 
 class ParticleFilter {
 	
@@ -88,8 +134,11 @@ public:
 	 * @param observations Vector of landmark observations
 	 * @param map Map class containing map landmarks
 	 */
-	void updateWeights(double sensor_range, double std_landmark[], const std::vector<LandmarkObs> &observations,
-			const Map &map_landmarks);
+	void updateWeights(
+		const double sensor_range, 
+		const double std_landmark[], 
+		const std::vector<LandmarkObs> &observations,
+		const Map &map_landmarks);
 	
 	/**
 	 * resample Resamples from the updated set of particles to form

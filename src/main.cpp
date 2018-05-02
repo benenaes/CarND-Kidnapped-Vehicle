@@ -25,6 +25,35 @@ std::string hasData(std::string s) {
   return "";
 }
 
+void test_calculation_of_weights()
+{
+	Particle particle{ 1, 4, 5, - M_PI / 2, 1, {}, {}, {} };
+
+	std::vector<LandmarkObs> landmarks{ {1, 2, 2}, {2, 3, -2}, {3, 0, -4} };
+
+	const std::vector<LandmarkObs> transformed_landmarks = transform_to_map_coordinates(landmarks, particle);
+
+	for (unsigned int i=0; i < transformed_landmarks.size(); ++i)
+	{ 
+		std::cout << transformed_landmarks[i].x << " " << transformed_landmarks[i].y << endl;
+	}
+
+	Map map;
+	map.landmark_list.emplace_back(Map::single_landmark_s{ 1, 5, 3 });
+	map.landmark_list.emplace_back(Map::single_landmark_s{ 2, 2, 1 });
+	map.landmark_list.emplace_back(Map::single_landmark_s{ 3, 6, 1 });
+	map.landmark_list.emplace_back(Map::single_landmark_s{ 4, 7, 4 });
+	map.landmark_list.emplace_back(Map::single_landmark_s{ 5, 4, 7 });
+
+	const double sigma_landmark[2] = { 0.3, 0.3 }; // Landmark measurement uncertainty [x [m], y [m]]
+	const double first_prob = calculate_single_probability(transformed_landmarks[2], map.landmark_list[4], sigma_landmark);
+	std::cout << first_prob << endl;
+
+	const double prob = calculate_multivariate_gaussian_prob(transformed_landmarks, map, {0, 1, 4}, sigma_landmark);
+
+	std::cout << prob << endl;
+}
+
 int main()
 {
   uWS::Hub h;
@@ -92,15 +121,15 @@ int main()
   			std::istringstream iss_x(sense_observations_x);
 
   			std::copy(std::istream_iterator<float>(iss_x),
-        	std::istream_iterator<float>(),
-        	std::back_inserter(x_sense));
+        		std::istream_iterator<float>(),
+        		std::back_inserter(x_sense));
 
         	std::vector<float> y_sense;
   			std::istringstream iss_y(sense_observations_y);
 
   			std::copy(std::istream_iterator<float>(iss_y),
-        	std::istream_iterator<float>(),
-        	std::back_inserter(y_sense));
+        		std::istream_iterator<float>(),
+        		std::back_inserter(y_sense));
 
         	for(int i = 0; i < x_sense.size(); i++)
         	{
@@ -112,6 +141,7 @@ int main()
 
 		  // Update the weights and resample
 		  pf.updateWeights(sensor_range, sigma_landmark, noisy_observations, map);
+
 		  pf.resample();
 
 		  // Calculate and output the average weighted error of the particle filter over all time steps so far.
@@ -120,8 +150,10 @@ int main()
 		  double highest_weight = -1.0;
 		  Particle best_particle;
 		  double weight_sum = 0.0;
-		  for (int i = 0; i < num_particles; ++i) {
-			if (particles[i].weight > highest_weight) {
+		  for (int i = 0; i < num_particles; ++i) 
+		  {
+			if (particles[i].weight > highest_weight) 
+			{
 				highest_weight = particles[i].weight;
 				best_particle = particles[i];
 			}
